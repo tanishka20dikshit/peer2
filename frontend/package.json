@@ -1,0 +1,19 @@
+{
+  "name": "chat-sys-frontend",
+  "version": "1.0.0",
+  "description": "Phase 6 Frontend - Secure Chat System (SOCP v1.3)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "npm run test:crypto && npm run test:websocket",
+    "test:crypto": "vite --mode test test/test-crypto.html",
+    "test:websocket": "vite --mode test test/test-websocket.html"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8"
+  },
+  "dependencies": {}
+}

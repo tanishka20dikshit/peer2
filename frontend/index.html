@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secure Chat System</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .container {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 450px;
+        width: 100%;
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 24px;
+        margin-bottom: 10px;
+        font-weight: 600;
+      }
+
+      .header p {
+        font-size: 14px;
+        opacity: 0.9;
+      }
+
+      .status-bar {
+        padding: 15px 30px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      .status-dot.disconnected {
+        background: #dc3545;
+      }
+
+      .status-dot.connecting {
+        background: #ffc107;
+      }
+
+      .status-dot.connected {
+        background: #28a745;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .server-config {
+        font-size: 12px;
+        color: #6c757d;
+      }
+
+      .content {
+        padding: 30px;
+      }
+
+      .view {
+        display: none;
+      }
+
+      .view.active {
+        display: block;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 8px;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      input:disabled {
+        background: #f8f9fa;
+        cursor: not-allowed;
+      }
+
+      .input-hint {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 4px;
+      }
+
+      .uuid-display {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 6px;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        color: #495057;
+        word-break: break-all;
+        margin-bottom: 15px;
+      }
+
+      button {
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-secondary {
+        background: #6c757d;
+        color: white;
+        margin-top: 10px;
+      }
+
+      .btn-secondary:hover:not(:disabled) {
+        background: #5a6268;
+      }
+
+      .progress-container {
+        display: none;
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .progress-container.active {
+        display: block;
+      }
+
+      .progress-text {
+        font-size: 13px;
+        color: #495057;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        transition: width 0.3s;
+        width: 0%;
+      }
+
+      .error-message {
+        display: none;
+        padding: 12px;
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 8px;
+        color: #721c24;
+        font-size: 13px;
+        margin-top: 15px;
+      }
+
+      .error-message.active {
+        display: block;
+      }
+
+      .success-message {
+        display: none;
+        padding: 12px;
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 8px;
+        color: #155724;
+        font-size: 13px;
+        margin-top: 15px;
+      }
+
+      .success-message.active {
+        display: block;
+      }
+
+      .user-info {
+        background: #e7f3ff;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+
+      .user-info h3 {
+        font-size: 16px;
+        color: #495057;
+        margin-bottom: 10px;
+      }
+
+      .user-detail {
+        font-size: 13px;
+        color: #6c757d;
+        margin: 5px 0;
+      }
+
+      .user-detail strong {
+        color: #495057;
+      }
+
+      .toggle-link {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 14px;
+        color: #6c757d;
+      }
+
+      .toggle-link a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .toggle-link a:hover {
+        text-decoration: underline;
+      }
+
+      .feature-notice {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+        font-size: 13px;
+        color: #856404;
+      }
+
+      .channel-key-status {
+        margin-top: 10px;
+        padding: 10px;
+        background: #d1ecf1;
+        border-radius: 6px;
+        font-size: 12px;
+        color: #0c5460;
+      }
+
+      .channel-key-status.ready {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <h1>🔐 Secure Chat System</h1>
+        <p>Phase 6.2: Authentication & Registration</p>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <div class="status-indicator">
+          <div class="status-dot disconnected" id="statusDot"></div>
+          <span id="statusText">Disconnected</span>
+        </div>
+        <div class="server-config" id="serverConfig">No server</div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="content">
+        <!-- Connection View -->
+        <div class="view active" id="connectionView">
+          <div class="form-group">
+            <label for="serverUrl">WebSocket Server URL</label>
+            <input
+              type="text"
+              id="serverUrl"
+              value="ws://localhost:8765"
+              placeholder="ws://localhost:8765"
+            />
+            <div class="input-hint">
+              Enter your backend server WebSocket URL
+            </div>
+          </div>
+
+          <button class="btn-primary" id="connectBtn">Connect to Server</button>
+
+          <div class="error-message" id="connectionError"></div>
+        </div>
+
+        <!-- Registration View -->
+        <div class="view" id="registrationView">
+          <h2 style="margin-bottom: 20px; font-size: 20px; color: #495057">
+            Create Account
+          </h2>
+
+          <div class="form-group">
+            <label>Your User ID (UUID)</label>
+            <div class="uuid-display" id="registrationUserId">
+              Generating...
+            </div>
+            <div class="input-hint">
+              This UUID will be your unique identifier
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="registerPassword">Password</label>
+            <input
+              type="password"
+              id="registerPassword"
+              placeholder="Enter a strong password"
+              minlength="8"
+            />
+            <div class="input-hint">
+              Min 8 characters, include uppercase, lowercase, and number
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="registerDisplayName">Display Name (Optional)</label>
+            <input
+              type="text"
+              id="registerDisplayName"
+              placeholder="Your display name"
+              maxlength="50"
+            />
+          </div>
+
+          <button class="btn-primary" id="registerBtn">Register Account</button>
+
+          <button class="btn-secondary" id="backToConnectFromRegister">
+            Back to Connection
+          </button>
+
+          <div class="progress-container" id="registerProgress">
+            <div class="progress-text" id="registerProgressText">
+              Preparing...
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="registerProgressFill"></div>
+            </div>
+          </div>
+
+          <div class="error-message" id="registerError"></div>
+          <div class="success-message" id="registerSuccess"></div>
+
+          <div class="toggle-link">
+            Already have an account? <a id="switchToLogin">Login here</a>
+          </div>
+        </div>
+
+        <!-- Login View -->
+        <div class="view" id="loginView">
+          <h2 style="margin-bottom: 20px; font-size: 20px; color: #495057">
+            Login
+          </h2>
+
+          <div class="form-group">
+            <label for="loginUserId">User ID (UUID)</label>
+            <input type="text" id="loginUserId" placeholder="Enter your UUID" />
+            <div class="input-hint">The UUID from your registration</div>
+          </div>
+
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input
+              type="password"
+              id="loginPassword"
+              placeholder="Enter your password"
+            />
+          </div>
+
+          <button class="btn-primary" id="loginBtn">Login</button>
+
+          <button class="btn-secondary" id="backToConnectFromLogin">
+            Back to Connection
+          </button>
+
+          <div class="progress-container" id="loginProgress">
+            <div class="progress-text" id="loginProgressText">
+              Logging in...
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="loginProgressFill"></div>
+            </div>
+          </div>
+
+          <div class="error-message" id="loginError"></div>
+          <div class="success-message" id="loginSuccess"></div>
+
+          <div class="toggle-link">
+            Don't have an account? <a id="switchToRegister">Register here</a>
+          </div>
+        </div>
+
+        <!-- Connected View -->
+        <div class="view" id="connectedView">
+          <div class="success-message active" style="display: block">
+            ✅ Successfully authenticated!
+          </div>
+
+          <div class="user-info">
+            <h3>Your Session</h3>
+            <div class="user-detail">
+              <strong>User ID:</strong><br />
+              <span
+                id="connectedUserId"
+                style="font-family: monospace; font-size: 11px"
+                >-</span
+              >
+            </div>
+            <div class="user-detail">
+              <strong>Server:</strong> <span id="connectedServer">-</span>
+            </div>
+            <div class="user-detail">
+              <strong>Display Name:</strong>
+              <span id="connectedDisplayName">-</span>
+            </div>
+
+            <div class="channel-key-status" id="channelKeyStatus">
+              <div class="spinner"></div>
+              Waiting for public channel key...
+            </div>
+          </div>
+
+          <div class="feature-notice">
+            <strong>✅ Ready to Chat!</strong><br />
+            Your session is active. Click the button below to enter the chat
+            room and start messaging.
+          </div>
+
+          <button
+            class="btn-primary"
+            id="enterChatRoomBtn"
+            style="margin-bottom: 10px"
+          >
+            💬 Enter Chat Room
+          </button>
+
+          <button class="btn-secondary" id="disconnectBtn">Disconnect</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Application Script -->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

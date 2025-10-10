@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secure Chat System</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: #f5f5f5;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Header */
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .header h1 {
+        font-size: 20px;
+        font-weight: 600;
+      }
+
+      .header-info {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        font-size: 13px;
+      }
+
+      .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #28a745;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .disconnect-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s;
+      }
+
+      .disconnect-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      /* Main Container */
+      .main-container {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      /* Sidebar - User List */
+      .sidebar {
+        width: 280px;
+        background: white;
+        border-right: 1px solid #e0e0e0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sidebar-header {
+        padding: 15px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e0e0e0;
+        font-weight: 600;
+        font-size: 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .refresh-btn {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        transition: all 0.3s;
+      }
+
+      .refresh-btn:hover {
+        background: #5568d3;
+      }
+
+      .user-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+      }
+
+      .user-item {
+        padding: 10px;
+        margin-bottom: 5px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 13px;
+      }
+
+      .user-item:hover {
+        background: #e9ecef;
+      }
+
+      .user-id {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 3px;
+      }
+
+      .user-location {
+        font-size: 11px;
+        color: #6c757d;
+      }
+
+      /* Chat Area */
+      .chat-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: white;
+      }
+
+      .chat-header {
+        padding: 15px 20px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e0e0e0;
+        font-weight: 600;
+        font-size: 14px;
+      }
+
+      .channel-key-notice {
+        padding: 10px 20px;
+        background: #fff3cd;
+        border-bottom: 1px solid #ffeaa7;
+        font-size: 12px;
+        color: #856404;
+        display: none;
+      }
+
+      .channel-key-notice.show {
+        display: block;
+      }
+
+      .channel-key-notice.ready {
+        background: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+      }
+
+      .messages-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .message {
+        max-width: 70%;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 14px;
+        line-height: 1.4;
+        word-wrap: break-word;
+      }
+
+      .message-system {
+        align-self: center;
+        background: #e9ecef;
+        color: #6c757d;
+        font-size: 12px;
+        font-style: italic;
+        max-width: 90%;
+        text-align: center;
+      }
+
+      .message-dm-sent {
+        align-self: flex-end;
+        background: #667eea;
+        color: white;
+      }
+
+      .message-dm-received {
+        align-self: flex-start;
+        background: #f8f9fa;
+        color: #495057;
+        border: 1px solid #e9ecef;
+      }
+
+      .message-public {
+        align-self: flex-start;
+        background: #e7f3ff;
+        color: #004085;
+        border: 1px solid #b8daff;
+        max-width: 80%;
+      }
+
+      .message-header {
+        font-size: 11px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        opacity: 0.8;
+      }
+
+      .message-time {
+        font-size: 10px;
+        opacity: 0.6;
+        margin-top: 4px;
+      }
+
+      .message-verified {
+        display: inline-block;
+        margin-left: 5px;
+        color: #28a745;
+        font-size: 10px;
+      }
+
+      /* Input Area */
+      .input-container {
+        padding: 15px 20px;
+        background: white;
+        border-top: 1px solid #e0e0e0;
+      }
+
+      .input-help {
+        font-size: 11px;
+        color: #6c757d;
+        margin-bottom: 10px;
+      }
+
+      .input-wrapper {
+        display: flex;
+        gap: 10px;
+      }
+
+      .command-input {
+        flex: 1;
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: "Courier New", monospace;
+        transition: border-color 0.3s;
+      }
+
+      .command-input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .send-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.3s;
+      }
+
+      .send-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .error-banner {
+        padding: 12px 20px;
+        background: #f8d7da;
+        border-bottom: 1px solid #f5c6cb;
+        color: #721c24;
+        font-size: 13px;
+        display: none;
+      }
+
+      .error-banner.show {
+        display: block;
+      }
+
+      /* Loading/Auth Screens */
+      .auth-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+
+      .auth-overlay.hidden {
+        display: none;
+      }
+
+      .auth-card {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+
+      .auth-card h2 {
+        margin-bottom: 20px;
+        color: #495057;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 6px;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .btn-primary {
+        width: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .toggle-link {
+        text-align: center;
+        margin-top: 15px;
+        font-size: 13px;
+        color: #6c757d;
+      }
+
+      .toggle-link a {
+        color: #667eea;
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      .toggle-link a:hover {
+        text-decoration: underline;
+      }
+
+      /* File Transfer UI */
+      .file-transfer-section {
+        padding: 10px 20px;
+        background: #f8f9fa;
+        border-top: 1px solid #e0e0e0;
+        max-height: 150px;
+        overflow-y: auto;
+        display: none;
+      }
+
+      .file-transfer-section.show {
+        display: block;
+      }
+
+      .file-transfer-item {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 10px;
+        font-size: 13px;
+      }
+
+      .file-transfer-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .file-transfer-name {
+        font-weight: 600;
+        color: #495057;
+        margin-right: 10px;
+      }
+
+      .file-transfer-size {
+        color: #6c757d;
+        font-size: 11px;
+      }
+
+      .file-transfer-direction {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+
+      .file-transfer-direction.sending {
+        background: #d1ecf1;
+        color: #0c5460;
+      }
+
+      .file-transfer-direction.receiving {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .file-transfer-progress {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+      }
+
+      .progress-bar-container {
+        flex: 1;
+        height: 6px;
+        background: #e9ecef;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        transition: width 0.3s ease;
+        border-radius: 3px;
+      }
+
+      .progress-bar-fill.complete {
+        background: #28a745;
+      }
+
+      .progress-text {
+        font-size: 11px;
+        color: #6c757d;
+        min-width: 50px;
+        text-align: right;
+      }
+
+      .file-transfer-status {
+        font-size: 11px;
+        color: #6c757d;
+        margin-top: 6px;
+      }
+
+      .file-transfer-status.complete {
+        color: #28a745;
+        font-weight: 500;
+      }
+
+      .file-transfer-status.error {
+        color: #dc3545;
+        font-weight: 500;
+      }
+
+      .download-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 4px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 500;
+        margin-top: 8px;
+      }
+
+      .download-btn:hover {
+        background: #218838;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <div class="header">
+      <h1>🔐 Secure Chat System - Phase 6.3</h1>
+      <div class="header-info">
+        <div class="status-indicator">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusText">Connected</span>
+        </div>
+        <span id="userIdDisplay">User: -</span>
+        <button class="disconnect-btn" id="disconnectBtn">Disconnect</button>
+      </div>
+    </div>
+
+    <!-- Error Banner -->
+    <div class="error-banner" id="errorBanner"></div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+      <!-- Sidebar - User List -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          Online Users (<span id="userCount">0</span>)
+          <button class="refresh-btn" id="refreshUsersBtn">/list</button>
+        </div>
+        <div class="user-list" id="userList">
+          <div
+            style="
+              padding: 20px;
+              text-align: center;
+              color: #6c757d;
+              font-size: 13px;
+            "
+          >
+            Click "/list" to load users
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Area -->
+      <div class="chat-container">
+        <div class="chat-header">💬 Messages</div>
+
+        <div class="channel-key-notice" id="channelKeyNotice">
+          ⏳ Waiting for public channel key...
+        </div>
+
+        <div class="messages-container" id="messagesContainer">
+          <div class="message message-system">
+            Welcome! Use /list to see users, /tell &lt;user&gt; &lt;msg&gt; for
+            DM, /all &lt;msg&gt; for broadcast, /file &lt;user&gt; [path] for file transfer
+          </div>
+        </div>
+
+        <!-- File Transfer Section -->
+        <div class="file-transfer-section" id="fileTransferSection">
+          <!-- Active transfers will be dynamically added here -->
+        </div>
+
+        <div class="input-container">
+          <div class="input-help">
+            Commands: <strong>/list</strong> |
+            <strong>/tell &lt;user_id&gt; &lt;message&gt;</strong> |
+            <strong>/all &lt;message&gt;</strong> |
+            <strong>/file &lt;user_id&gt; [path]</strong>
+          </div>
+          <div class="input-wrapper">
+            <input
+              type="text"
+              class="command-input"
+              id="commandInput"
+              placeholder="Enter command..."
+              autocomplete="off"
+            />
+            <button class="send-btn" id="sendBtn">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden File Input -->
+    <input
+      type="file"
+      id="fileInput"
+      style="display: none"
+    />
+
+    <!-- Auth Overlay (shown on page load) -->
+    <div class="auth-overlay" id="authOverlay">
+      <div class="auth-card">
+        <h2>Login Required</h2>
+        <p style="margin-bottom: 20px; font-size: 13px; color: #6c757d">
+          Please complete Phase 6.2 authentication first by opening index.html
+        </p>
+        <div class="form-group">
+          <label>WebSocket Server</label>
+          <input type="text" id="serverUrl" value="ws://localhost:8765" />
+        </div>
+        <div class="form-group">
+          <label>User ID</label>
+          <input type="text" id="loginUserId" placeholder="Your UUID" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input
+            type="password"
+            id="loginPassword"
+            placeholder="Your password"
+          />
+        </div>
+        <button class="btn-primary" id="quickLoginBtn">Quick Login</button>
+        <div class="toggle-link">
+          Or use <a href="index.html">full authentication UI</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Application Script -->
+    <script type="module" src="/src/main-phase6-3.ts"></script>
+  </body>
+</html>
